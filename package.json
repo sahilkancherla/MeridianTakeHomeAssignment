@@ -8,8 +8,18 @@
     "node": ">=18"
   },
   "scripts": {
+    "dev": "concurrently -n web,api -c blue,green \"pnpm dev:web\" \"pnpm dev:api\"",
     "dev:web": "pnpm --filter @meridian/web dev",
+    "dev:api": "uv run --directory services/api uvicorn app.main:app --reload --port 8787",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.3"
   }
 }

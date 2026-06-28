@@ -1,0 +1,55 @@
+/*
+ * Design tokens — "operational blueprint" aesthetic.
+ * Warm paper canvas, ink text, and the 8 primitives as the color signature.
+ * The per-primitive hues are the visual vocabulary the whole app is built on.
+ */
+
+:root {
+  /* Type */
+  --font-display: 'Bricolage Grotesque Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-ui: 'Hanken Grotesk Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, 'SF Mono', monospace;
+
+  /* Surfaces & ink */
+  --paper: #f4f1ea; /* the canvas — warm workshop paper */
+  --surface: #fbfaf6; /* panels */
+  --surface-raised: #ffffff; /* cards, popovers */
+  --ink: #1c1a16;
+  --ink-soft: #514c40;
+  --ink-muted: #8b8475;
+  --line: #e5e0d4; /* hairline borders */
+  --line-strong: #d4cdbd;
+  --grid-dot: #d8d2c4;
+
+  --shadow-card: 0 1px 2px rgba(28, 26, 22, 0.06), 0 6px 18px rgba(28, 26, 22, 0.06);
+  --shadow-pop: 0 10px 40px rgba(28, 26, 22, 0.14);
+  --shadow-sel: 0 0 0 2px var(--c, var(--ink)), 0 8px 24px rgba(28, 26, 22, 0.16);
+
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-pill: 999px;
+
+  /* The eight primitive hues */
+  --c-trigger: #c77f08; /* amber — the spark that starts it */
+  --c-input: #2f6fae; /* blue — documents / information */
+  --c-system: #0c8a86; /* teal — where data lives */
+  --c-action: #5a51d4; /* indigo — something gets done */
+  --c-rule: #3f8c45; /* green — a check that must pass */
+  --c-decision: #9a37a6; /* violet — the path forks */
+  --c-branch: #b1389a; /* magenta — a conditional split */
+  --c-exception: #cf432a; /* red — something went wrong */
+  --c-outcome: #2f2c26; /* graphite — the process ends */
+
+  --accent: var(--c-action);
+}
+
+/* tint = a primitive hue mixed into paper, for soft fills/backgrounds */
+.tint-trigger   { --c: var(--c-trigger);   --c-tint: color-mix(in oklab, var(--c-trigger) 12%, var(--surface-raised)); }
+.tint-input     { --c: var(--c-input);     --c-tint: color-mix(in oklab, var(--c-input) 12%, var(--surface-raised)); }
+.tint-system    { --c: var(--c-system);    --c-tint: color-mix(in oklab, var(--c-system) 12%, var(--surface-raised)); }
+.tint-action    { --c: var(--c-action);    --c-tint: color-mix(in oklab, var(--c-action) 12%, var(--surface-raised)); }
+.tint-rule      { --c: var(--c-rule);      --c-tint: color-mix(in oklab, var(--c-rule) 12%, var(--surface-raised)); }
+.tint-decision  { --c: var(--c-decision);  --c-tint: color-mix(in oklab, var(--c-decision) 12%, var(--surface-raised)); }
+.tint-branch    { --c: var(--c-branch);    --c-tint: color-mix(in oklab, var(--c-branch) 12%, var(--surface-raised)); }
+.tint-exception { --c: var(--c-exception); --c-tint: color-mix(in oklab, var(--c-exception) 12%, var(--surface-raised)); }
+.tint-outcome   { --c: var(--c-outcome);   --c-tint: color-mix(in oklab, var(--c-outcome) 12%, var(--surface-raised)); }

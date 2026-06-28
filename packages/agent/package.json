@@ -1,0 +1,38 @@
+{
+  "name": "@meridian/agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Reusable agent skeleton — a durable Temporal state-machine runtime that runs any FrozenSpec.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./eval": "./src/eval/index.ts"
+  },
+  "scripts": {
+    "worker": "tsx src/temporal/worker.ts",
+    "demo": "tsx src/example/demo.ts",
+    "init-agent": "tsx src/codegen/initCli.ts",
+    "generate": "tsx src/codegen/generateCli.ts",
+    "scaffold": "tsx src/codegen/cli.ts",
+    "heal-status": "tsx src/eval/healCli.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.106.0",
+    "@composio/core": "^0.13.1",
+    "@meridian/spec": "workspace:*",
+    "@temporalio/activity": "^1.18.1",
+    "@temporalio/client": "^1.18.1",
+    "@temporalio/testing": "^1.18.1",
+    "@temporalio/worker": "^1.18.1",
+    "@temporalio/workflow": "^1.18.1",
+    "dotenv": "^17.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.4"
+  }
+}

@@ -1,0 +1,20 @@
+# Build context for Dockerfile.web is the repo root — keep it lean and secret-free.
+**/node_modules
+**/dist
+**/build
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+.git
+.github
+.claude
+.playwright-mcp
+docs
+supabase
+# Never bake local secrets into an image.
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store

@@ -1,0 +1,8 @@
+# Build context for services/api/Dockerfile is this directory.
+.venv
+**/__pycache__
+.pytest_cache
+.ruff_cache
+tests
+*.pyc
+.DS_Store

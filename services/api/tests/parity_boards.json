@@ -1,0 +1,85 @@
+{
+  "boards": [
+    {
+      "name": "empty",
+      "cards": [],
+      "edges": []
+    },
+    {
+      "name": "receiving_rich",
+      "openComments": 2,
+      "cards": [
+        { "id": "t1", "type": "trigger", "label": "Email received", "source": "gmail", "position": { "x": 0, "y": 0 } },
+        { "id": "i1", "type": "input", "label": "Commercial Invoice", "required": true, "position": { "x": 0, "y": 100 } },
+        { "id": "i2", "type": "input", "label": "Certificate of Analysis", "required": true, "position": { "x": 0, "y": 200 } },
+        { "id": "sys1", "type": "system", "label": "Gmail", "access": "log into the shared receiving inbox", "secrets": [{ "key": "gmail_app_password", "label": "Gmail app password" }], "position": { "x": 200, "y": 0 } },
+        { "id": "a1", "type": "action", "label": "Extract PO number", "systemId": "sys1", "produces": [{ "name": "PO number" }], "position": { "x": 0, "y": 300 } },
+        { "id": "a2", "type": "action", "label": "Cross-check fields", "position": { "x": 0, "y": 400 } },
+        { "id": "r1", "type": "rule", "label": "Docs present", "expression": "commercial invoice and certificate of analysis are present", "position": { "x": 0, "y": 500 } },
+        { "id": "d1", "type": "branch", "label": "Consistent?", "branches": [{ "label": "Yes", "condition": "the documents are consistent" }, { "label": "No", "condition": "the documents are not consistent" }], "position": { "x": 0, "y": 600 } },
+        { "id": "e1", "type": "exception", "label": "COA missing", "condition": "coa missing", "position": { "x": 200, "y": 600 } },
+        { "id": "o1", "type": "outcome", "label": "Received", "terminal": true, "disposition": "received", "position": { "x": 0, "y": 700 } },
+        { "id": "o2", "type": "outcome", "label": "Rejected", "terminal": true, "disposition": "rejected", "position": { "x": 200, "y": 700 } }
+      ],
+      "edges": [
+        { "id": "x1", "type": "flow", "source": "t1", "target": "a1", "kind": "flow" },
+        { "id": "x2", "source": "a1", "target": "a2", "kind": "flow" },
+        { "id": "x3", "source": "a2", "target": "r1", "kind": "flow" },
+        { "id": "x4", "source": "r1", "target": "d1", "kind": "flow" },
+        { "id": "x5", "source": "d1", "target": "o1", "branchLabel": "Yes", "kind": "flow" },
+        { "id": "x6", "source": "e1", "target": "o2", "kind": "flow" }
+      ]
+    },
+    {
+      "name": "flow_cycle",
+      "cards": [
+        { "id": "t1", "type": "trigger", "label": "Start", "position": { "x": 0, "y": 0 } },
+        { "id": "a1", "type": "action", "label": "Step A", "systemId": "s", "position": { "x": 0, "y": 100 } },
+        { "id": "a2", "type": "action", "label": "Step B", "systemId": "s", "position": { "x": 0, "y": 200 } },
+        { "id": "a3", "type": "action", "label": "Step C", "systemId": "s", "position": { "x": 0, "y": 300 } }
+      ],
+      "edges": [
+        { "id": "e1", "source": "t1", "target": "a1", "kind": "flow" },
+        { "id": "e2", "source": "a1", "target": "a2", "kind": "flow" },
+        { "id": "e3", "source": "a2", "target": "a3", "kind": "flow" },
+        { "id": "e4", "source": "a3", "target": "a1", "kind": "flow" }
+      ]
+    },
+    {
+      "name": "no_trigger_and_unreachable",
+      "cards": [
+        { "id": "a1", "type": "action", "label": "Orphan action", "position": { "x": 0, "y": 0 } },
+        { "id": "o1", "type": "outcome", "label": "Done", "terminal": true, "position": { "x": 0, "y": 100 } }
+      ],
+      "edges": []
+    },
+    {
+      "name": "multiple_triggers_and_branch",
+      "cards": [
+        { "id": "t1", "type": "trigger", "label": "Email arrives", "position": { "x": 0, "y": 0 } },
+        { "id": "t2", "type": "trigger", "label": "Manual start", "position": { "x": 100, "y": 0 } },
+        { "id": "b1", "type": "branch", "label": "Value split", "branches": [
+            { "label": "High value", "condition": "order total over 10000" },
+            { "label": "Standard", "condition": "otherwise" }
+          ], "position": { "x": 0, "y": 100 } },
+        { "id": "o1", "type": "outcome", "label": "High path", "terminal": true, "position": { "x": 0, "y": 200 } }
+      ],
+      "edges": [
+        { "id": "e1", "source": "b1", "target": "o1", "branchLabel": "High value", "kind": "flow" }
+      ]
+    },
+    {
+      "name": "dangling_exception_and_unrouted_branch",
+      "cards": [
+        { "id": "t1", "type": "trigger", "label": "Kickoff", "position": { "x": 0, "y": 0 } },
+        { "id": "d1", "type": "branch", "label": "Approve?", "branches": [{ "label": "Yes", "condition": "the invoice is approved" }, { "label": "No", "condition": "the invoice is not approved" }], "position": { "x": 0, "y": 100 } },
+        { "id": "e1", "type": "exception", "label": "Late doc", "condition": "document late", "position": { "x": 200, "y": 100 } },
+        { "id": "o1", "type": "outcome", "label": "Approved", "terminal": true, "position": { "x": 0, "y": 200 } }
+      ],
+      "edges": [
+        { "id": "e1x", "source": "t1", "target": "d1", "kind": "flow" },
+        { "id": "e2x", "source": "d1", "target": "o1", "branchLabel": "Yes", "kind": "flow" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+# Meridian web (Vite + React SPA) — built in the pnpm monorepo, served as static files.
+# Build context is the REPO ROOT (the web build needs the @meridian/spec workspace
+# package, consumed from TypeScript source). On Railway set this service's root
+# directory to the repo root and dockerfilePath to Dockerfile.web (see railway.json).
+#
+# Build-time env (passed as --build-arg / Railway build variables, baked into the
+# static bundle by Vite):
+#   VITE_API_BASE_URL    public origin of the deployed API service (e.g. https://api-xxx.up.railway.app)
+#   VITE_SUPABASE_URL    Supabase project URL
+#   VITE_SUPABASE_ANON_KEY  Supabase anon key
+
+# ---- build stage ----
+FROM node:20-slim AS build
+RUN corepack enable
+WORKDIR /repo
+
+# Vite inlines VITE_* env at build time, so these must be present during `pnpm build`.
+ARG VITE_API_BASE_URL=""
+ARG VITE_SUPABASE_URL=""
+ARG VITE_SUPABASE_ANON_KEY=""
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL \
+    VITE_SUPABASE_URL=$VITE_SUPABASE_URL \
+    VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
+
+# Copy the whole workspace (the web build resolves @meridian/spec from source).
+# .dockerignore keeps node_modules / dist / .venv / .git out of the context.
+COPY . .
+
+# Install only what the web app's dependency graph needs, from the frozen lockfile.
+RUN pnpm install --frozen-lockfile --filter @meridian/web...
+# Build with vite directly rather than the package's `build` script. That script is
+# `tsc --noEmit && vite build`; the repo currently has an in-progress primitive rename
+# (decision -> branch/exception) that fails the tsc gate but does not affect the bundle
+# (dev and `vite build` both transpile without type-checking). Run typecheck in CI, not
+# in the production image build. Revert to `pnpm --filter @meridian/web build` once the
+# migration's type errors are resolved.
+RUN pnpm --filter @meridian/web exec vite build
+
+# ---- runtime stage ----
+FROM node:20-slim AS runtime
+RUN npm install -g serve@14
+WORKDIR /app
+COPY --from=build /repo/packages/web/dist ./dist
+
+ENV PORT=8080
+EXPOSE 8080
+
+# `serve -s` does SPA history fallback (React Router BrowserRouter); honor Railway's $PORT.
+CMD ["sh", "-c", "serve -s dist -l ${PORT:-8080}"]

@@ -1,5 +1,5 @@
 -- Whiteboard Mode — initial schema
--- See docs/design/whiteboard-spec.md §9 and design-doc.md §5/§7.
+-- See docs/design/whiteboard-spec.md §10 + §11 and ai-review-spec.md §1.
 --
 -- Entities:
 --   process      a named business process (one whiteboard each)
@@ -30,17 +30,23 @@ create type comment_category as enum ('missing_info', 'ambiguity', 'structure', 
 -- ---------------------------------------------------------------------------
 create table process (
   id          uuid primary key default gen_random_uuid(),
+  -- Owner. Defaults to the caller's auth uid so client inserts set it automatically;
+  -- RLS (see 00000000000003) scopes every row to its owner.
+  user_id     uuid not null references auth.users(id) on delete cascade default auth.uid(),
   name        text not null,
   status      process_status not null default 'draft',
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );
+create index process_user_idx on process(user_id);
 
 -- ---------------------------------------------------------------------------
 -- card
 -- ---------------------------------------------------------------------------
 create table card (
-  id          uuid primary key default gen_random_uuid(),
+  -- Text PK: the app's own card id (a nanoid) is the source of truth, so edges and
+  -- comments reference stable ids that survive a round-trip through the DB.
+  id          text primary key,
   process_id  uuid not null references process(id) on delete cascade,
   type        primitive_type not null,
   label       text not null default '',
@@ -58,10 +64,10 @@ create index card_process_idx on card(process_id);
 -- edge
 -- ---------------------------------------------------------------------------
 create table edge (
-  id           uuid primary key default gen_random_uuid(),
+  id           text primary key,
   process_id   uuid not null references process(id) on delete cascade,
-  source_id    uuid not null references card(id) on delete cascade,
-  target_id    uuid not null references card(id) on delete cascade,
+  source_id    text not null references card(id) on delete cascade,
+  target_id    text not null references card(id) on delete cascade,
   branch_label text,
   kind         edge_kind not null default 'flow',
   created_at   timestamptz not null default now()
@@ -72,14 +78,14 @@ create index edge_process_idx on edge(process_id);
 -- comment
 -- ---------------------------------------------------------------------------
 create table comment (
-  id          uuid primary key default gen_random_uuid(),
+  id          text primary key,
   process_id  uuid not null references process(id) on delete cascade,
-  card_id     uuid references card(id) on delete cascade,  -- null = canvas-level
+  card_id     text references card(id) on delete cascade,  -- null = canvas-level
   author      comment_author not null,
   body        text not null,
   status      comment_status not null default 'open',
   category    comment_category,
-  parent_id   uuid references comment(id) on delete cascade,
+  parent_id   text references comment(id) on delete cascade,
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );

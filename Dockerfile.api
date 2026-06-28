@@ -1,0 +1,31 @@
+# Meridian API (FastAPI) — ROOT-CONTEXT build for Railway.
+#
+# `railway up` always uploads the git-repo root as the build context (it ignores the
+# working directory), so on Railway we build the API from the repo root and reference
+# its files under services/api/. Each service picks its Dockerfile via the
+# RAILWAY_DOCKERFILE_PATH service variable (web -> Dockerfile.web, api -> Dockerfile.api).
+#
+# For a local, self-contained build you can still use services/api/Dockerfile, which
+# builds from the services/api directory with relative paths.
+FROM python:3.12-slim
+
+COPY --from=ghcr.io/astral-sh/uv:0.5 /uv /usr/local/bin/uv
+
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    UV_PROJECT_ENVIRONMENT=/app/.venv \
+    PATH="/app/.venv/bin:$PATH"
+
+WORKDIR /app
+
+# Dependencies first (cached) — lockfile + manifest from services/api.
+COPY services/api/pyproject.toml services/api/uv.lock ./
+RUN uv sync --frozen --no-dev --no-install-project
+
+# Application code.
+COPY services/api/app ./app
+
+ENV PORT=8080
+EXPOSE 8080
+
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080}"]

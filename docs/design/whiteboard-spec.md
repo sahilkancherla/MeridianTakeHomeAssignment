@@ -61,15 +61,21 @@ to a non-engineer in one sentence.**
 | 3 | **System** 🖥 | An external tool or place where data lives. | "Gmail inbox," "the WMS." |
 | 4 | **Action** ▶ | Something a person or the agent does. | "Extract the PO number from the invoice." |
 | 5 | **Rule / Check** ✓ | A condition that must be true to continue. | "All required documents are present." |
-| 6 | **Decision** ◆ | A branch where the path splits based on an answer. | "Are the COA values within spec? Yes / No." |
+| 6 | **Branch** ◆ | A point where the path splits, with a condition for each way it can go. | "COA within spec? → Yes / No" (or a multi-way split). |
 | 7 | **Exception** ⚠ | What to do when something is missing or wrong. | "COA missing → email exporter to request it." |
 | 8 | **Outcome** 🏁 | A terminal state where the process ends. | "Shipment approved" / "Shipment held." |
 
 **Why these eight:**
 - **Trigger, Input, System, Action** describe the happy path — the nouns and verbs.
-- **Rule, Decision, Exception** are what make this more than a flowchart: they capture the
+- **Rule, Branch, Exception** are what make this more than a flowchart: they capture the
   branching and messiness that, left implicit, produce a brittle agent.
 - **Outcome** forces the user to name where the process ends — what the eval checks.
+
+**One splitting primitive, not two.** An earlier draft had both a *Decision* (answer-based,
+fixed Yes/No labels) and a *Branch* (a condition per path). They were redundant — a Yes/No
+decision is just a Branch with two paths — so the set collapses to a single **Branch**: the
+common case is two paths ("Yes"/"No"), and a multi-way split is N paths, each with its own
+condition. One concept the owner has to learn, not two.
 
 **Deliberately excluded:** loops, variables, parallel fork/join, timers. Each fails the
 one-sentence test. A loop ("keep emailing until the COA arrives") is expressed as an
@@ -89,21 +95,38 @@ Every card carries structured fields — this is what makes the canvas compile t
 type CardBase = {
   id: string;
   type: PrimitiveType;          // 'trigger' | 'input' | 'system' | 'action' |
-                                // 'rule' | 'decision' | 'exception' | 'outcome'
+                                // 'rule' | 'branch' | 'exception' | 'outcome'
   label: string;                // short human title shown on the card
   description?: string;         // free-text detail
   position: { x: number; y: number };
 };
 
 type TriggerCard   = CardBase & { type: 'trigger';  source?: string };          // e.g. "Gmail inbox"
-type InputCard     = CardBase & { type: 'input';    required: boolean; format?: string };
-type SystemCard    = CardBase & { type: 'system';   integration?: string };     // e.g. "composio.gmail"
-type ActionCard    = CardBase & { type: 'action';   systemId?: string; waitDays?: number };
+type InputCard     = CardBase & { type: 'input';    required: boolean; format?: string; fields?: DataField[] };
+type SystemCard    = CardBase & { type: 'system';   access?: string; secrets?: SecretRef[]; integration?: string /* deprecated */ };
+type ActionCard    = CardBase & { type: 'action';   systemId?: string; waitDays?: number; produces?: DataField[] };
 type RuleCard      = CardBase & { type: 'rule';     expression: string };        // human-readable condition
-type DecisionCard  = CardBase & { type: 'decision'; question: string; branches: string[] }; // e.g. ['Yes','No']
+type BranchCard    = CardBase & { type: 'branch';   branches: { label: string; condition: string }[] }; // each path: a label + its condition
 type ExceptionCard = CardBase & { type: 'exception'; condition: string };
 type OutcomeCard   = CardBase & { type: 'outcome';  terminal: true; disposition?: string }; // 'approved' | 'held' | …
+
+// Plain-language data the owner can attach (no type system on the canvas):
+type DataField = { name: string; description?: string; required?: boolean; example?: string };
+// A credential a System needs — DECLARED here, valued elsewhere (see §10.3 / system-access-and-secrets.md):
+type SecretRef = { key: string; label: string; description?: string; provided?: boolean };
 ```
+
+**Inputs/Actions can name the data they carry.** An Input's `fields` are the pieces of data
+on a document ("PO number", "line items"); an Action's `produces` are the pieces of data the
+step establishes. These are optional and plain-language, but when present they become the
+*authoritative* producers in the facts model (§7.2.1) — replacing the heuristic that guesses
+fact names from text — and give the codegen a real extraction schema instead of a guess.
+
+**Systems carry access + credentials, not tool names.** A System describes, in the owner's
+words, *how the team reaches it* (`access`) and *which credentials the agent will need*
+(`secrets`). The card never names a Composio tool — turning "log into the Gmail inbox" into
+the right tool is `spec-to-agent`'s job (§0). Secret **values never live on the card or in the
+spec**; see §10.3.
 
 Edges carry meaning too:
 
@@ -112,7 +135,7 @@ type Edge = {
   id: string;
   source: string;               // card id
   target: string;               // card id
-  branchLabel?: string;         // for edges leaving a Decision: which branch ('Yes'/'No')
+  branchLabel?: string;         // for edges leaving a Branch: which path ('Yes'/'No'/…)
   kind: 'flow' | 'exception';   // 'exception' edges may point backward (loop-back)
 };
 ```
@@ -237,8 +260,8 @@ Opens a **modal**:
 
 ### 4.2 Canvas (center) — React Flow
 - Cards are **custom node types**; one renderer per primitive, color-coded.
-- The card face shows: icon, `label`, and a compact summary of its key field (a Decision
-  shows its `question`; an Input shows `required?`).
+- The card face shows: icon, `label`, and a compact summary of its key field (a Branch
+  shows its first path's condition; an Input shows `required?` + field count).
 - **Selecting a card** opens the **inspector** (§5).
 - Pan/zoom, multi-select, drag to reposition, delete with keyboard. Manual freeform layout
   (no forced auto-layout).
@@ -267,15 +290,15 @@ Fields per primitive (from §1.1):
 | Primitive | Inspector fields |
 |-----------|------------------|
 | **Trigger** | label · description · source (e.g. "Gmail inbox") |
-| **Input** | label · description · required (toggle) · format |
-| **System** | label · description · integration (e.g. `composio.gmail`) |
-| **Action** | label · description · linked System · wait-up-to (days) |
+| **Input** | label · description · required (toggle) · format · **fields** (the data this document carries) |
+| **System** | label · description · **how it's accessed** (plain language) · **credentials** (declared secrets; values stored securely, §10.3) |
+| **Action** | label · description · linked System · **produces** (the data this step establishes) · wait-up-to (days) |
 | **Rule** | label · description · condition (human-readable text) |
-| **Decision** | label · description · question · branches (list, e.g. Yes/No) |
+| **Branch** | label · description · conditional paths (each: a label + its condition; a plain Yes/No is two paths) |
 | **Exception** | label · description · condition (when it triggers) |
 | **Outcome** | label · description · disposition (e.g. approved / held) |
 
-- Editing **branches** on a Decision updates that card's connection handles live (§6).
+- Editing **paths** on a Branch updates that card's connection handles live (§6).
 - The inspector also shows the selected card's **warning badges**, its **comments**, and
   its **AI annotation** (confidence + assumptions + ambiguities, §7.3) — so the user can
   resolve issues without leaving the panel.
@@ -287,9 +310,9 @@ Fields per primitive (from §1.1):
 ### 6.1 Drawing connections — drag-from-card-edge with labeled handles
 - **Drag from a card's edge handle to another card** to connect them (standard React
   Flow). The edge defaults to `kind: 'flow'`.
-- A **Decision card auto-exposes one outgoing handle per branch.** If its `branches` are
-  `['Yes','No']`, it shows a Yes handle and a No handle; the edge drawn from each is
-  **pre-labeled** with that branch (`branchLabel`). No manual labeling step.
+- A **Branch card auto-exposes one outgoing handle per path.** A new Branch starts with a
+  Yes handle and a No handle; the edge drawn from each is **pre-labeled** with that path
+  (`branchLabel`). No manual labeling step. Add paths for a multi-way split.
 - **Exception edges** (`kind: 'exception'`) are drawn from an Exception card and render
   **dashed**; these are the only edges allowed to point *backward* (loop-back), which is
   how repetition is expressed without a loop primitive.
@@ -301,7 +324,7 @@ an "invalid" connection; the canvas marks it (a badge, §7.4) and the AI review 
 | Rule | Enforcement |
 |------|-------------|
 | Exactly one **Trigger** starts the graph | Soft warning if 0 or >1 |
-| A **Decision** should have one outgoing edge per branch | Soft warning if branch count ≠ outgoing edges |
+| A **Branch** should have one outgoing edge per path | Soft warning if path count ≠ outgoing edges |
 | An **Outcome** is terminal (no outgoing `flow` edges) | Soft warning if it has outgoing flow edges |
 | Every non-Outcome card should reach an **Outcome** | Soft warning on dangling/dead-end cards |
 | **Exception** edges may point backward; `flow` edges may not form cycles | `flow` cycle → soft warning; suggests converting to an exception edge |
@@ -359,10 +382,10 @@ type ProcessGraph = {
   // derived structure (computed, not drawn)
   entry: string | null;          // the Trigger node (null/ambiguous => a finding)
   terminals: string[];           // all Outcome nodes
-  branches: {                    // every decision point, normalized
-    decisionId: string;
-    question: string;
-    paths: { label: string; targetId: string | null }[];  // null target = missing path
+  branches: {                    // every split point, normalized
+    cardId: string;
+    question: string;            // the Branch card's label
+    paths: { label: string; condition?: string; targetId: string | null }[];  // null target = missing path
   }[];
 
   // semantic models
@@ -383,17 +406,18 @@ step **produces** or **consumes** named pieces of information:
 type Fact = {
   name: string;          // "po_number", "coa_values", "all_docs_present"
   producedBy: string[];  // card ids that establish it (e.g. an Action "extract PO")
-  consumedBy: string[];  // card ids that use it (a Rule / Decision)
+  consumedBy: string[];  // card ids that use it (a Rule / Branch)
 };
 ```
 
-Facts are seeded from card fields (Inputs and Actions produce; Rules and Decisions consume,
-parsed from their `expression`/`question` text — heuristically by the analyzer, then
-confirmed/enriched by the AI pass). The payoff is catching the most dangerous gap class —
-*referenced but never established*:
+Facts are seeded from card fields. Inputs and Actions **produce**: from their declared
+`fields`/`produces` when present (authoritative), else from the card label (heuristic).
+Rules and Branches **consume**, parsed from their `expression`/`condition` text —
+heuristically by the analyzer, then confirmed/enriched by the AI pass. The payoff is
+catching the most dangerous gap class — *referenced but never established*:
 
-> Decision **"Are COA values within spec?"** consumes `coa_values`, but no Action produces
-> it. Where does this data come from?
+> Branch **"COA within spec?"** consumes `coa_values`, but no Action produces it. Where
+> does this data come from?
 
 A plain DAG can't see that; the facts model makes it a deterministic check **and** a precise
 AI-review prompt.
@@ -406,7 +430,7 @@ first-class schema data. No API call; cheap enough to run on every autosave.
 type StructuralFinding = {
   kind:
     | 'no_trigger' | 'multiple_triggers' | 'unreachable_card'
-    | 'missing_decision_branch' | 'outcome_unreachable' | 'dangling_exception'
+    | 'missing_branch_path' | 'outcome_unreachable' | 'dangling_exception'
     | 'action_without_system' | 'flow_cycle' | 'fact_never_produced';
   cardId: string | null;
   detail: string;
@@ -451,7 +475,7 @@ review; see [`ai-review-spec.md`](./ai-review-spec.md).)
    comments pin precisely instead of being vague.
 3. **A real completeness signal** — drives the Submit gate beyond "no open comments."
 4. **Clean compile target** — each node type maps to a code construct (Trigger→entry point,
-   Decision→branch, Exception→recover, Fact→variable); codegen reads the schema.
+   Branch→branch, Exception→recover, Fact→variable); codegen reads the schema.
 5. **Diffable specs** — layer 2 is position-free and normalized, so versions diff cleanly.
 
 ---
@@ -495,7 +519,7 @@ canvas. Confirmed changes go onto a **unified undo/redo** stack.
 │  You: add an exception for when the COA is missing      │
 │                                                         │
 │  AI: I'll add an Exception "COA missing" off the        │
-│      "All docs present?" decision's No branch, wiring   │
+│      "All docs present?" branch's No path, wiring       │
 │      it to email the exporter and hold the shipment.    │
 │      ┌─────────────────────────────────────────────┐    │
 │      │ Proposed: +2 cards, +3 edges   [Confirm][✕] │    │  ← preview banner
@@ -579,7 +603,7 @@ canvas.
   an `add_card` in the same proposal.
 - Temp ids (`new_*`) are unique within the proposal; on confirm they're swapped for real
   uuids and edge endpoints are remapped.
-- New cards/edges are validated against the primitive/edge shapes (Decision needs
+- New cards/edges are validated against the primitive/edge shapes (Branch needs
   `branches`, etc.).
 - If validation fails, the service asks the model to repair once; if it still fails, the
   turn returns as a chat message ("I couldn't safely make that change because …").
@@ -706,14 +730,27 @@ ai_annotation(id, process_id, card_id, confidence, assumptions_jsonb, ambiguitie
 chat_message(id, process_id, role, kind, content, proposal_jsonb, proposal_status, created_at)
 app_settings(id /*singleton*/, review_model, auto_escalate, block_submit_with_open_comments, updated_at)
 frozen_spec(spec_id, process_id, version, payload_jsonb, created_at)   -- append-only, no UPDATE
+system_secret(id, process_id, card_id, key, value, created_at, updated_at)  -- unique(process_id, card_id, key); §10.3
 ```
 
 - `card.fields_jsonb` holds the per-primitive fields (§1.1) so the schema stays stable as
-  primitive fields evolve.
+  primitive fields evolve. This includes a System's declared `secrets` (key + label only)
+  and Input/Action `fields`/`produces` — but **never a secret value**.
 - The **`ProcessGraph` (§7) is not a table** — it's recomputed from `card`/`edge` on demand.
   Only the AI's `ai_annotation` output is stored, since it isn't derivable.
 - `frozen_spec.payload_jsonb` is the full self-contained `FrozenSpec` (§11), including the
   analyzed `ProcessGraph` (facts, branches, findings) captured at submit.
+
+### 10.3 System secrets (the one place a value lives)
+A System primitive can declare the credentials it needs (`secrets: SecretRef[]`). The
+**declaration** travels on the card / in the spec; the **value** does not. Values live in
+`system_secret`, one row per `(process, card, key)`, owner-scoped by RLS (migration
+`00000000000011`). The web app writes a value and can read back *which keys are set* (to show
+"saved"), but never reads a value. The agent runtime resolves a value at execution time —
+inside a Temporal activity — via `ctx.tools.secrets.get(key)`, and it is never written to a
+fact, the trace, or a log. Rationale and the production-hardening note (encrypt at rest /
+Vault) are in [`system-access-and-secrets.md`](./system-access-and-secrets.md). This keeps
+the immutable, content-hashed frozen spec free of credentials by construction.
 
 ### 10.2 Data layer (functions to implement)
 Typed Supabase calls (`packages/web/src/data/`, or `packages/api` where a server is needed):
@@ -791,7 +828,7 @@ type FrozenSpec = {
 | Add a card | Drag a palette tile onto the canvas |
 | Edit a card's fields | Select card → right inspector panel |
 | Connect cards | Drag from a card's edge handle to another card |
-| Branch a Decision | Set its branches → one labeled handle appears per branch |
+| Branch the flow | Set a Branch's paths → one labeled handle appears per path |
 | Loop back | Draw an Exception edge (dashed) to an earlier card |
 | Edit by chat | Open the chat panel → type an instruction → Confirm the preview |
 | Ask a question | Type it in the chat panel (no canvas change) |
@@ -813,8 +850,8 @@ type FrozenSpec = {
 - [ ] Rename, duplicate, archive/unarchive, and delete all work from the `⋯` menu;
       duplicate copies cards + edges (remapped endpoints), not comments/specs.
 - [ ] Dragging a palette tile creates a card; selecting it edits its fields in the
-      inspector; dragging from a handle connects cards; a Decision exposes one labeled
-      handle per branch.
+      inspector; dragging from a handle connects cards; a Branch exposes one labeled
+      handle per path.
 - [ ] Structural finding badges appear on offending cards before any review.
 - [ ] Chat: a question returns a chat answer (canvas untouched); an edit instruction returns
       a summary + a Confirm/Discard preview (green/red/amber highlights); the canvas is
@@ -832,7 +869,7 @@ type FrozenSpec = {
 ---
 
 ## 14. Open questions / chosen defaults
-- **Decision branch reordering** in the inspector (affects handle order) — assume yes, low
+- **Branch path reordering** in the inspector (affects handle order) — assume yes, low
   priority.
 - **Comment threading depth** — flat replies for the time box.
 - **Fact extraction** — how far to push the deterministic heuristic (§7.2.1) before leaning

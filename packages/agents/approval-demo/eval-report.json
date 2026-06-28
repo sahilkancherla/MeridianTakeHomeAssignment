@@ -1,0 +1,21 @@
+{
+  "total": 2,
+  "passed": 2,
+  "failed": 0,
+  "results": [
+    {
+      "name": "small request is auto-approved",
+      "passed": true,
+      "mismatches": [],
+      "status": "completed",
+      "disposition": "approved"
+    },
+    {
+      "name": "large request goes to manual review",
+      "passed": true,
+      "mismatches": [],
+      "status": "completed",
+      "disposition": "manual_review"
+    }
+  ]
+}

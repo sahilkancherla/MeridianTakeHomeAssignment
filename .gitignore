@@ -35,3 +35,12 @@ Thumbs.db
 # Test / coverage
 coverage/
 .nyc_output/
+
+# Python (services/api, managed with uv)
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/

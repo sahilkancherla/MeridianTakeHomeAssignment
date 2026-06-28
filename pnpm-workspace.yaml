@@ -1,2 +1,4 @@
 packages:
   - "packages/*"
+  # Generated agents (one per submitted spec) scaffolded by the spec-to-agent skill.
+  - "packages/agents/*"

@@ -1,0 +1,22 @@
+[
+  {
+    "name": "small request is auto-approved",
+    "input": { "facts": { "amount": 250 } },
+    "expect": {
+      "status": "completed",
+      "disposition": "approved",
+      "facts": { "risk_score": "low" },
+      "traceIncludesCards": ["a_score", "d_risk", "o_approved"]
+    }
+  },
+  {
+    "name": "large request goes to manual review",
+    "input": { "facts": { "amount": 99000 } },
+    "expect": {
+      "status": "completed",
+      "disposition": "manual_review",
+      "facts": { "risk_score": "high" },
+      "traceIncludesCards": ["a_score", "d_risk", "o_review"]
+    }
+  }
+]

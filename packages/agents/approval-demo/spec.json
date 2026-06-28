@@ -1,0 +1,198 @@
+{
+  "specId": "spec_468698e2",
+  "version": 1,
+  "createdAt": "2026-06-27T00:00:00.000Z",
+  "processName": "Request Approval (example)",
+  "cards": [
+    {
+      "id": "t_request",
+      "type": "trigger",
+      "label": "Request received",
+      "source": "intake form",
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "a_score",
+      "type": "action",
+      "label": "Score the request",
+      "position": {
+        "x": 220,
+        "y": 0
+      }
+    },
+    {
+      "id": "d_risk",
+      "type": "branch",
+      "label": "Low risk?",
+      "branches": [
+        {
+          "label": "Yes",
+          "condition": "risk_score is low"
+        },
+        {
+          "label": "No",
+          "condition": "risk_score is high"
+        }
+      ],
+      "position": {
+        "x": 460,
+        "y": 0
+      }
+    },
+    {
+      "id": "o_approved",
+      "type": "outcome",
+      "label": "Auto-approved",
+      "terminal": true,
+      "disposition": "approved",
+      "position": {
+        "x": 700,
+        "y": -80
+      }
+    },
+    {
+      "id": "o_review",
+      "type": "outcome",
+      "label": "Manual review",
+      "terminal": true,
+      "disposition": "manual_review",
+      "position": {
+        "x": 700,
+        "y": 80
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "t_request",
+      "target": "a_score",
+      "kind": "flow"
+    },
+    {
+      "id": "e2",
+      "source": "a_score",
+      "target": "d_risk",
+      "kind": "flow"
+    },
+    {
+      "id": "e3",
+      "source": "d_risk",
+      "target": "o_approved",
+      "branchLabel": "Yes",
+      "kind": "flow"
+    },
+    {
+      "id": "e4",
+      "source": "d_risk",
+      "target": "o_review",
+      "branchLabel": "No",
+      "kind": "flow"
+    }
+  ],
+  "graph": {
+    "entry": "t_request",
+    "terminals": [
+      "o_approved",
+      "o_review"
+    ],
+    "branches": [
+      {
+        "cardId": "d_risk",
+        "question": "Low risk?",
+        "paths": [
+          {
+            "label": "Yes",
+            "condition": "risk_score is low",
+            "targetId": "o_approved"
+          },
+          {
+            "label": "No",
+            "condition": "risk_score is high",
+            "targetId": "o_review"
+          }
+        ]
+      }
+    ],
+    "facts": [
+      {
+        "name": "score_the_request",
+        "label": "Score the request",
+        "producedBy": [
+          "a_score"
+        ],
+        "consumedBy": []
+      },
+      {
+        "name": "risk_score",
+        "label": "risk score",
+        "producedBy": [],
+        "consumedBy": [
+          "d_risk"
+        ]
+      },
+      {
+        "name": "low",
+        "label": "low",
+        "producedBy": [],
+        "consumedBy": [
+          "d_risk"
+        ]
+      },
+      {
+        "name": "high",
+        "label": "high",
+        "producedBy": [],
+        "consumedBy": [
+          "d_risk"
+        ]
+      }
+    ],
+    "findings": [
+      {
+        "kind": "action_without_system",
+        "cardId": "a_score",
+        "detail": "Action \"Score the request\" isn't linked to a System — where does it run?"
+      },
+      {
+        "kind": "fact_never_produced",
+        "cardId": "d_risk",
+        "detail": "\"risk score\" is used but never established — no step produces it. Where does this data come from?"
+      },
+      {
+        "kind": "fact_never_produced",
+        "cardId": "d_risk",
+        "detail": "\"low\" is used but never established — no step produces it. Where does this data come from?"
+      },
+      {
+        "kind": "fact_never_produced",
+        "cardId": "d_risk",
+        "detail": "\"high\" is used but never established — no step produces it. Where does this data come from?"
+      }
+    ],
+    "completeness": {
+      "score": 0.56,
+      "openFindings": 4,
+      "openComments": 0
+    },
+    "annotations": []
+  },
+  "resolvedAssumptions": [],
+  "outcomes": [
+    {
+      "id": "o_approved",
+      "disposition": "approved"
+    },
+    {
+      "id": "o_review",
+      "disposition": "manual_review"
+    }
+  ],
+  "sourceMeta": {
+    "reviewRounds": 0,
+    "openCommentsAtSubmit": 0
+  }
+}

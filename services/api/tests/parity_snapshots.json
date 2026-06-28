@@ -1,0 +1,389 @@
+{
+  "empty": {
+    "entry": null,
+    "terminals": [],
+    "branches": [],
+    "facts": [],
+    "findings": [
+      {
+        "kind": "no_trigger",
+        "cardId": null,
+        "detail": "No Trigger — the process has no defined starting event."
+      }
+    ],
+    "completeness": {
+      "score": 0,
+      "openFindings": 1,
+      "openComments": 0
+    }
+  },
+  "receiving_rich": {
+    "entry": "t1",
+    "terminals": [
+      "o1",
+      "o2"
+    ],
+    "branches": [
+      {
+        "cardId": "d1",
+        "question": "Consistent?",
+        "paths": [
+          {
+            "label": "Yes",
+            "condition": "the documents are consistent",
+            "targetId": "o1"
+          },
+          {
+            "label": "No",
+            "condition": "the documents are not consistent",
+            "targetId": null
+          }
+        ]
+      }
+    ],
+    "facts": [
+      {
+        "name": "commercial_invoice",
+        "label": "Commercial Invoice",
+        "producedBy": [
+          "i1"
+        ],
+        "consumedBy": [
+          "r1"
+        ]
+      },
+      {
+        "name": "certificate_of_analysis",
+        "label": "Certificate of Analysis",
+        "producedBy": [
+          "i2"
+        ],
+        "consumedBy": [
+          "r1"
+        ]
+      },
+      {
+        "name": "po_number",
+        "label": "PO number",
+        "producedBy": [
+          "a1"
+        ],
+        "consumedBy": []
+      },
+      {
+        "name": "cross_check_fields",
+        "label": "Cross-check fields",
+        "producedBy": [
+          "a2"
+        ],
+        "consumedBy": []
+      },
+      {
+        "name": "present",
+        "label": "present",
+        "producedBy": [],
+        "consumedBy": [
+          "r1"
+        ]
+      },
+      {
+        "name": "documents",
+        "label": "documents",
+        "producedBy": [],
+        "consumedBy": [
+          "d1"
+        ]
+      },
+      {
+        "name": "consistent",
+        "label": "consistent",
+        "producedBy": [],
+        "consumedBy": [
+          "d1"
+        ]
+      }
+    ],
+    "findings": [
+      {
+        "kind": "unreachable_card",
+        "cardId": "e1",
+        "detail": "\"COA missing\" cannot be reached from the Trigger."
+      },
+      {
+        "kind": "unreachable_card",
+        "cardId": "o2",
+        "detail": "\"Rejected\" cannot be reached from the Trigger."
+      },
+      {
+        "kind": "outcome_unreachable",
+        "cardId": "o2",
+        "detail": "Outcome \"Rejected\" is never reached — no path leads to it."
+      },
+      {
+        "kind": "missing_branch_path",
+        "cardId": "d1",
+        "detail": "Branch \"Consistent?\" has a \"No\" path with no target — what happens then?"
+      },
+      {
+        "kind": "action_without_system",
+        "cardId": "a2",
+        "detail": "Action \"Cross-check fields\" isn't linked to a System — where does it run?"
+      },
+      {
+        "kind": "fact_never_produced",
+        "cardId": "r1",
+        "detail": "\"present\" is used but never established — no step produces it. Where does this data come from?"
+      },
+      {
+        "kind": "fact_never_produced",
+        "cardId": "d1",
+        "detail": "\"documents\" is used but never established — no step produces it. Where does this data come from?"
+      },
+      {
+        "kind": "fact_never_produced",
+        "cardId": "d1",
+        "detail": "\"consistent\" is used but never established — no step produces it. Where does this data come from?"
+      }
+    ],
+    "completeness": {
+      "score": 0.52,
+      "openFindings": 8,
+      "openComments": 2
+    }
+  },
+  "flow_cycle": {
+    "entry": "t1",
+    "terminals": [],
+    "branches": [],
+    "facts": [
+      {
+        "name": "step_a",
+        "label": "Step A",
+        "producedBy": [
+          "a1"
+        ],
+        "consumedBy": []
+      },
+      {
+        "name": "step_b",
+        "label": "Step B",
+        "producedBy": [
+          "a2"
+        ],
+        "consumedBy": []
+      },
+      {
+        "name": "step_c",
+        "label": "Step C",
+        "producedBy": [
+          "a3"
+        ],
+        "consumedBy": []
+      }
+    ],
+    "findings": [
+      {
+        "kind": "flow_cycle",
+        "cardId": "a1",
+        "detail": "This card is part of a flow cycle — loops should be drawn as Exception edges."
+      },
+      {
+        "kind": "flow_cycle",
+        "cardId": "a2",
+        "detail": "This card is part of a flow cycle — loops should be drawn as Exception edges."
+      },
+      {
+        "kind": "flow_cycle",
+        "cardId": "a3",
+        "detail": "This card is part of a flow cycle — loops should be drawn as Exception edges."
+      }
+    ],
+    "completeness": {
+      "score": 0.57,
+      "openFindings": 3,
+      "openComments": 0
+    }
+  },
+  "no_trigger_and_unreachable": {
+    "entry": null,
+    "terminals": [
+      "o1"
+    ],
+    "branches": [],
+    "facts": [
+      {
+        "name": "orphan_action",
+        "label": "Orphan action",
+        "producedBy": [
+          "a1"
+        ],
+        "consumedBy": []
+      }
+    ],
+    "findings": [
+      {
+        "kind": "no_trigger",
+        "cardId": null,
+        "detail": "No Trigger — the process has no defined starting event."
+      },
+      {
+        "kind": "action_without_system",
+        "cardId": "a1",
+        "detail": "Action \"Orphan action\" isn't linked to a System — where does it run?"
+      }
+    ],
+    "completeness": {
+      "score": 0.5,
+      "openFindings": 2,
+      "openComments": 0
+    }
+  },
+  "multiple_triggers_and_branch": {
+    "entry": null,
+    "terminals": [
+      "o1"
+    ],
+    "branches": [
+      {
+        "cardId": "b1",
+        "question": "Value split",
+        "paths": [
+          {
+            "label": "High value",
+            "condition": "order total over 10000",
+            "targetId": "o1"
+          },
+          {
+            "label": "Standard",
+            "condition": "otherwise",
+            "targetId": null
+          }
+        ]
+      }
+    ],
+    "facts": [
+      {
+        "name": "order_total_over_10000",
+        "label": "order total over 10000",
+        "producedBy": [],
+        "consumedBy": [
+          "b1"
+        ]
+      },
+      {
+        "name": "otherwise",
+        "label": "otherwise",
+        "producedBy": [],
+        "consumedBy": [
+          "b1"
+        ]
+      }
+    ],
+    "findings": [
+      {
+        "kind": "multiple_triggers",
+        "cardId": "t1",
+        "detail": "More than one Trigger (\"Email arrives\") — a process should have a single entry point."
+      },
+      {
+        "kind": "multiple_triggers",
+        "cardId": "t2",
+        "detail": "More than one Trigger (\"Manual start\") — a process should have a single entry point."
+      },
+      {
+        "kind": "missing_branch_path",
+        "cardId": "b1",
+        "detail": "Branch \"Value split\" has a \"Standard\" path with no target — what happens then?"
+      },
+      {
+        "kind": "fact_never_produced",
+        "cardId": "b1",
+        "detail": "\"order total over 10000\" is used but never established — no step produces it. Where does this data come from?"
+      },
+      {
+        "kind": "fact_never_produced",
+        "cardId": "b1",
+        "detail": "\"otherwise\" is used but never established — no step produces it. Where does this data come from?"
+      }
+    ],
+    "completeness": {
+      "score": 0.44,
+      "openFindings": 5,
+      "openComments": 0
+    }
+  },
+  "dangling_exception_and_unrouted_branch": {
+    "entry": "t1",
+    "terminals": [
+      "o1"
+    ],
+    "branches": [
+      {
+        "cardId": "d1",
+        "question": "Approve?",
+        "paths": [
+          {
+            "label": "Yes",
+            "condition": "the invoice is approved",
+            "targetId": "o1"
+          },
+          {
+            "label": "No",
+            "condition": "the invoice is not approved",
+            "targetId": null
+          }
+        ]
+      }
+    ],
+    "facts": [
+      {
+        "name": "invoice",
+        "label": "invoice",
+        "producedBy": [],
+        "consumedBy": [
+          "d1"
+        ]
+      },
+      {
+        "name": "approved",
+        "label": "approved",
+        "producedBy": [],
+        "consumedBy": [
+          "d1"
+        ]
+      }
+    ],
+    "findings": [
+      {
+        "kind": "unreachable_card",
+        "cardId": "e1",
+        "detail": "\"Late doc\" cannot be reached from the Trigger."
+      },
+      {
+        "kind": "missing_branch_path",
+        "cardId": "d1",
+        "detail": "Branch \"Approve?\" has a \"No\" path with no target — what happens then?"
+      },
+      {
+        "kind": "dangling_exception",
+        "cardId": "e1",
+        "detail": "Exception \"Late doc\" has no outgoing path — what should happen when it occurs?"
+      },
+      {
+        "kind": "fact_never_produced",
+        "cardId": "d1",
+        "detail": "\"invoice\" is used but never established — no step produces it. Where does this data come from?"
+      },
+      {
+        "kind": "fact_never_produced",
+        "cardId": "d1",
+        "detail": "\"approved\" is used but never established — no step produces it. Where does this data come from?"
+      }
+    ],
+    "completeness": {
+      "score": 0.44,
+      "openFindings": 5,
+      "openComments": 0
+    }
+  }
+}

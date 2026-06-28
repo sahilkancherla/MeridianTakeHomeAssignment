@@ -1,6 +1,5 @@
 /**
- * Comment & revision model — see docs/design/design-doc.md §5 and
- * docs/design/whiteboard-spec.md §5.
+ * Comment & revision model — see docs/design/ai-review-spec.md §1.
  */
 
 export const COMMENT_STATUSES = ['open', 'answered', 'rejected', 'resolved'] as const;
@@ -20,6 +19,9 @@ export type Comment = {
   /** Pinned card; null = canvas-level comment. */
   cardId: string | null;
   author: 'ai' | 'user';
+  /** Email of the human who wrote it (null for AI comments) — attribution in a
+   *  multi-user org so a teammate's comment isn't shown as "You". */
+  authorEmail?: string | null;
   body: string;
   status: CommentStatus;
   category?: CommentCategory;
